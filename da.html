@@ -1,0 +1,989 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letters - A Digital Archive</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Custom Base Styles --- */
+        :root {
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Hide scrollbar for clean UI but allow scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Custom Scrollbar for Textareas */
+        textarea::-webkit-scrollbar {
+            width: 6px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 20px;
+        }
+        .theme-dark textarea::-webkit-scrollbar-thumb {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type=range]:focus {
+            outline: none; 
+        }
+        
+        /* Webkit Thumb */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: currentColor;
+            margin-top: -4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        input[type=range]:active::-webkit-slider-thumb {
+            transform: scale(1.1);
+        }
+
+        /* Firefox Thumb */
+        input[type=range]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: currentColor;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        input[type=range]:active::-moz-range-thumb {
+            transform: scale(1.1);
+        }
+
+        /* Webkit Track */
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            border-radius: 9999px;
+        }
+        
+        /* Firefox Track */
+        input[type=range]::-moz-range-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            border-radius: 9999px;
+        }
+
+        /* Font Families */
+        .font-serif { font-family: 'Crimson Pro', serif; }
+        .font-sans { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-display { font-family: 'Newsreader', serif; }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-scaleIn {
+            animation: scaleIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: translate(-50%, 10px) scale(0.9); }
+            60% { opacity: 1; transform: translate(-50%, -2px) scale(1.02); }
+            100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        }
+        .animate-tooltip {
+            animation: bounceIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Custom Selection Colors */
+        .theme-sepia ::selection { background: #d6c4a8; color: #433422; }
+        .theme-dark ::selection { background: #4338ca; color: #e2e8f0; }
+        .theme-light ::selection { background: #c7d2fe; color: #1e1b4b; }
+
+    </style>
+</head>
+<body id="body" class="min-h-screen theme-light">
+
+    <!-- App Container -->
+    <div id="app" class="flex min-h-screen relative overflow-hidden">
+        
+        <!-- Sidebar -->
+        <div id="sidebar-container" class="z-40"></div>
+
+        <!-- Mobile Overlay -->
+        <div id="mobile-overlay" class="fixed inset-0 bg-black/20 z-30 hidden backdrop-blur-sm transition-opacity duration-300 opacity-0" onclick="app.toggleMobileMenu(false)"></div>
+
+        <!-- Main Content Wrapper -->
+        <main class="flex-1 md:ml-72 relative w-full h-screen overflow-y-auto no-scrollbar scroll-smooth">
+            
+            <!-- Mobile Header -->
+            <div id="mobile-header" class="md:hidden p-4 flex justify-between items-center sticky top-0 z-20 backdrop-blur-xl border-b transition-colors duration-300">
+                <button onclick="app.toggleMobileMenu(true)" class="p-2 -ml-2 rounded-lg hover:bg-black/5 transition-colors">
+                    <i data-lucide="menu" width="24" height="24"></i>
+                </button>
+                <span class="font-bold text-lg font-display tracking-wide">Letters</span>
+                <div class="w-8"></div> <!-- Spacer for balance -->
+            </div>
+
+            <!-- Content View -->
+            <div id="main-content" class="min-h-full p-6 md:p-12 lg:p-20 max-w-5xl mx-auto transition-all duration-300">
+                <!-- Content injected here -->
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Global Floating Elements -->
+    
+    <!-- Selection Tooltip -->
+    <div id="selection-tooltip" class="fixed z-50 hidden transform -translate-x-1/2 left-0 top-0 pointer-events-none">
+        <div class="pointer-events-auto shadow-2xl rounded-full">
+            <button onclick="app.saveSelectedPhrase()" id="tooltip-btn" class="px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-sm border border-white/10">
+                <i data-lucide="highlighter" width="14" height="14"></i>
+                <span>Save Quote</span>
+            </button>
+        </div>
+        <!-- Little triangle pointer -->
+        <div id="tooltip-arrow" class="w-3 h-3 bg-current transform rotate-45 mx-auto -mt-1.5 shadow-sm"></div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-6 right-6 z-50 transition-all duration-500 transform -translate-y-20 opacity-0 pointer-events-none">
+        <div id="toast-content" class="px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-medium border border-white/10 backdrop-blur-md">
+            <div class="p-1 rounded-full bg-white/20">
+                <i data-lucide="check" width="14" height="14" class="stroke-[3]"></i>
+            </div>
+            Saved to your collection
+        </div>
+    </div>
+
+    <script>
+        // --- Mock Data ---
+        const LETTERS = [
+    {
+        id: 1,
+        title: "Read Before",
+        date: "Preface",
+        readTime: "Please read first",
+        content: `
+            <div class="mb-6 p-4 rounded-xl bg-amber-50 text-amber-900 border border-amber-200">
+                <p class="text-sm font-semibold tracking-wide uppercase mb-2">Read Before</p>
+                <p class="mb-3">I want to say that this message is long, messy, and very honest. I wrote it over time and didn't know how to shorten it without losing what I wanted to say.</p>
+                <p class="mb-0">Please don't feel any pressure to respond perfectly, quickly, or in detail. Even a simple reply is more than enough. I mostly just wanted to be honest and let yuo know.</p>
+            </div>
+            <p class="mb-3 text-xs uppercase tracking-[0.2em] opacity-60">Preface</p>
+            <p class="mb-6">Note: Ts will contain a lot of bad grammar, mistakes and its all natural and honest so u might even see me disagree with my own statements or correct them and even write the thoughts inside my head.</p>
+            <p class="mb-0 text-sm opacity-60">(Everything below is kept exactly how I wrote it so it stays honest.)</p>
+        `
+    },
+    {
+        id: 2,
+        title: "Apology & Silence",
+        date: "September-December",
+        readTime: "First letter",
+        content: `
+            <p class="mb-8 first-letter:text-5xl first-letter:font-display first-letter:mr-2 first-letter:float-left first-letter:leading-[0.8]">Hello. Im going to start this with an apology.</p>
+            <div class="mb-8 p-4 rounded-xl bg-slate-900/5 dark:bg-white/5 border border-white/10">
+              
+                <p class="mb-4">We stopped talking as much (or at all) since september, since school/college started. There is no one to blame in this situation, it happens and sometimes silence is inevitable. Either way, i blame myself, i had all the time in the world, i had days when i had nothing to do and i still didnt text or even show that i am alive/ im sure you already know my bad habit of isolation, its a bad habit, i dont always do it because i NEED to, i do it because i just want to, but a want is not as reasonable as a need.</p>
+                <p class="font-semibold text-sm mb-2">Why do i want to?</p>
+                <ul class="list-disc list-inside space-y-1 ml-2">
+                    <li>just pure tiredness / not in the mood (but this isnt a cause for not texting whole months, this is just a background cause)</li>
+                    <li>mental tiredness</li>
+                    <li>anger caused by humans that excels into anger for EVERY human, leading to isolation from any social interaction (dont do this btw)</li>
+                    <li>and many more, but they are mostly just excuses.</li>
+                </ul>
+            </div>
+
+           
+            <p class="mb-6">A non-exuse id say, is my first college experience. I think this deeply affected my overall state/ social state to the point of switching to survival mode (only focusing on college and my whole presence there) - what does this mean? It was a crazy start, and ill get to it in some sentances, but i basically just be on my own, its not like i couldnt get help from others, but i chose to be on my own intentionally, becayse of the worrying, stress, and shock, i chose to be on my own and try my best to survive being there. Why "survive?" I felt like i was losing it at any givem moment, the moment i stepped there i wanted to run away, but i didnt, which shocked me, the moment i stepped in the class with all the classmates, wanted to never come there again, but i still came back, and that shocked me. Why did these things shock me? Because im very straight forward and if i want to do something, ill do it, but in this case i resisted the anxiety.</p>
+
+            <h3 class="text-lg font-semibold mb-2">Crazy start (Day 1)</h3>
+            <p class="mb-6">First day of college (we actually had lessons): first, we had to atend a meeting with all the students, and i met some of my classmates there, after that, the lessons started, they were chill but the shock was still huge, ive studied 9 years of my life in a high school, close to my house and now im 30km away from home, new classmates, new teachers, new envoirment, NEW EVERYTHING. I was so confident that id just run away or something, just to escape, but i managed myself. And bro, there was 1 class at the end of that first day of school, the teacher is the most patriot and serious and i dont know bro dictator type person, she felt extremely mean and rude, the truth is that she just has a lot of expectations and only wants perfection, but still it was terrifying. I left that last class literally shivering, i lowkenuinely wanted to just leave the country at that same moment. I went home with my friend, public transport still felt so weird and it just felt weird walking around the city when i havent really done that alot.</p>
+
+            <p class="mb-6">When i came home, al i wanted to do was to sleep, and so i did, i was so stressed and worried that all i could do was escape reality in my sleep.</p>
+            <p class="mb-6"><strong>In short:</strong> i was shocked and stressed from the amount of things that changed, i was shocked because i left my comfort zone and i was literally doing something while actively not wanting to do it. Now u understand the crazy start, and this is one of the non-excuses, because this can affect a person on a long term, and it did affect me, all i wanted was to be alone, because i had enough stress and i just couldnt process anything more.</p>
+
+            <h3 class="text-lg font-semibold mb-2">The apology</h3>
+            <p class="mb-6">Okay enough crying about my non existent ability to remain calm when not in my comfort zone. I am sorry for not showing signs of being alive, sorry for not checking in and see if EVEN u are alive, i dont have a excuse that can fully cover my behavior, but i tried to justify it as much as i can, i would never act like this without any cause, i would never not want to talk to you.</p>
+
+            <div class="mb-6 p-4 rounded-xl border border-white/10 bg-black/5 dark:bg-white/5">
+                <p class="font-semibold mb-2">What i miss</p>
+                <p class="mb-4">One thing that i want you to get into the deepest parts of your brain and memory is that i've always been exited just by thinking about the conversations we could have, the things we could have done in the meantime. Ive been yearning for those times when we used to play 99 and talk almost all day and im so serious, i literally have it planned for my winter vacantion and i wanted to play 99 wiht you on christmas day.</p>
+                <p class="mb-0">There hasnt been a single time when you came across my mind and not think "dang i miss those times we had in summer vac", i really miss them and they really hold a special part in my heart because i geniuenly had a happy summer vacantion, without those times, my vac would be empty and it would be just a waste of time.</p>
+            </div>
+
+            <p class="mb-6">The last days of college, i thought about finally sending u the "big text" and starting to talk again, i really wanted to talk with u again and play and just do whatever/ and im serious about this because i dont usually feel this way, id rather keep being alone, but in this case, experiencing those times again is way more appreciable than my strong "beloved" isolation.</p>
+            <p class="mb-6"><strong>In short:</strong> Im sorry / College broke me / i never wanted to NOT talk with you / i miss those peak summer times.</p>
+            <p class="mb-6">I dont want you to think im trying to make excuses for my behavior, because im not. I just want you to understand that i am aware of my wrong doings and i feel regret for that / i wish we could start talking again.</p>
+
+            <div class="mt-10 p-4 rounded-xl border border-amber-300/60 bg-amber-50 text-amber-900">
+                <p class="text-xs uppercase tracking-[0.25em] opacity-70 mb-1">Update</p>
+                <p class="mb-0">I dont really know how to express myself or the apology/ should i do it extra or bare minimum? I shouldnt overexplain but i also strive to make you understand that i am truly sorry. I hope u will not get any wrong ideea from what i wrote and if u ever have a question, please ask me/ many times i do not explain my thought very well and people misunderstand what i truly mean. Thank you vro.</p>
+            </div>
+        `
+    },
+    {
+        id: 3,
+        title: "Start of First Semester",
+        date: "September-October",
+        readTime: "School update",
+        content: `
+            <p class="mb-6">Okay, now ill begin describing how my life has been since the end of summer vacantion.</p>
+            <p class="mb-6">Okay, starting from the very first days of school: Once again, the first week of school was very hard, im pretty sure i kept telling u how terrified i was at the start, but it just kept being like that for the first 1-2 weeks. After that, i made some new friends, was able to easily communicate with classmates and everything just became easier.</p>
+            <p class="mb-6">Since it was the start, i had a lot of motivation school-wise and i did my homework for a entire week in just one day, i organized everything and i was just doing my best. I probably already told u but ill just remind u that i went to that college with one of my classmates from highschool. After we finished the first week of college, we went to eat somewhere nice (pizza.) and we felt so relieved, we told ourselves we will go to some good place to eat after: first week of college, first month of college, first semester of college, first year of college and so on, as a reward system for surviving here.</p>
+            <p class="mb-6">Anyway in about 2 weeks i got to know the teachers pretty well:</p>
+            <ul class="list-disc list-inside space-y-2 mb-6">
+                <li><strong>math teacher:</strong> good tbh she is pretty forgiving and i love what grades she be giving me.</li>
+                <li><strong>romaian teacher:</strong> you already know, everyone is scared of her.</li>
+                <li><strong>programming teacher:</strong> is alright but she lowk too strict and not many like her.</li>
+                <li><strong>geography teacher:</strong> very nice and funny but her rules lowk harsh like one day she asked us to say the whole theme from the book without actually giving us any homework the lesson before, so we were confused, but its alright because now we understand her rules.</li>
+                <li><strong>p.e teacher:</strong> literally described so well by those tiktoks that say "When i ask my p.e teacher something but im not a 5'2 girl : ????????" bro literally so obviously flirts with the girls its funny but concerning as well (bro gave my friend a 10 for the whole semester because he helped fix something in the p.e room).</li>
+                <li><strong>history teacher:</strong> idk its actually easy to get good grades in her class but the test that she makes are annoying bro, her tests are literally just 5 questions and u have to check the correct option out of 4 options, and bro THOSE QUESTIONS ARE NOT GENERAL, they are very specific info taht we barely spoke about, she really wants us to read ALL of that book.</li>
+                <li><strong>chimestry/biology teacher:</strong> she is so awesome bro, she is very forgiving, she helps us alot, she teaches very well and she is so calm, lowk my fav teacher.</li>
+                <li><strong>physics teacher:</strong> also cool, he is our head teacher and he is forgiving aswell, sadly mostly all of us suck at physics which prob isnt the most awesome thing for him but its fine, he dosent like the fact that im goated at math but i suck at physics (its ok teach' i also dont understand why im like that).</li>
+                <li><strong>english teacher:</strong> also very cool, shes a mix of my highschool english and IT teacher, she has very good humor but is also strict enough.</li>
+                <li><strong>others:</strong> and theres some more but i stated the most cool ones.</li>
+            </ul>
+            <p class="mb-6">About my classmates, idk, since we are a programming group i thought every1 will be a nerd but they r actually pretty goofy, which is good because they are also pretty calm and quiet.</p>
+            <p class="mb-6">The whole start of the college year was pretty hard, especially because new teachers mean new rules and new ways of grading/teaching and so on, but i adapted pretty well. If me and my bestfriend(from hs) could describe this period it would be like this : "Ts is scary, we cant laugh and fool around yet, we need to survive first" either way im pretty sure we were laughing every day/</p>
+        `
+    },
+    {
+        id: 4,
+        title: "Mid-Semester: Sleep & Time",
+        date: "November",
+        readTime: "Routine",
+        content: `
+            <p class="mb-6">Alright this is the last letter about the school.</p>
+            <p class="mb-6">Lets go at around.. the middle of the first semester, which was in november. School was easy to handle, i didnt really struggle but at around this time i began to understand my self sabotage / okay already understood it but i just saw it more clearly. I would constantly not do my homework when i get home, i was playing, sleeping and just doing whatever i could to relax. The biggest problem was that i left the homework very late, like i was supposed to sleep at 9:40 but that would be the time when id start the homework.</p>
+
+            <ul class="list-disc list-inside space-y-1 ml-2 mb-6">
+                <li>First set: from my village to some other place, i go with the public transport and it takes about 20 minutes.</li>
+                <li>Second set: either on foot from there to the college or transport (but at the middle of the schoom semester i only went on foot) and thats about 30 minute walk.</li>
+                <li>So it takes me around 1 hour to get to college from my house.</li>
+                <li>I also need like 30 mins in the morning to get ready and leave.</li>
+                <li>What time do i need to wake up at? 5:40 AM. IF I GO TO SLEEP at 9:40 pm.</li>
+            </ul>
+            <p class="mb-6">Because i didnt do my homework in day time, i did it at night, which made me go to slep at 11... 12... sometimes even 1 am.</p>
+            <p class="mb-6">I constantly had 4-5 hours of sleep. At school, most lessons id just try to sleep in sets (2mins then wake up then another 2 mins) untill the lesson finished (a lesson was 1hr 30 mins). This made lose a lot of progress, especially in IT classes bc holy they are boring/ either way it wasnt a problem, at IT exam there were exercises where id usually sleep and not understand, but i solved them correctly by just thinking a bit more. Either way, my sleep schedule was very bad and it was because of not organizing my time well.</p>
+            <p class="mb-6">I honestly felt like a time bomb at that school/ check under your bed./ Even tho i would barely do my homework and be in another world i actually adapted very well at every lesson, it might be a superpower of mine to adapt to every circumstances (no one asked but im just trying to be very open about EVERYTHING that happened);</p>
+            <p class="mb-0"><strong>In short:</strong> very bad time organizing, insanely bad sleep schedule, but i pushing tho twin im goated lowk.</p>
+        `
+    },
+    {
+        id: 5,
+        title: "Timezones & Small Adventures",
+        date: "Daily life bits",
+        readTime: "Stories",
+        content: `
+            <p class="mb-6">This letter will be for all timezones, in this one i will basically say alot of fun facts and memories.</p>
+            <p class="mb-6">Okay first of all, me and bestfriend that went to college tomorrow like to laugh alot and just invent sh, we just always have something to talk about.</p>
+            <h3 class="text-lg font-semibold mb-2">Food tour</h3>
+            <ul class="list-disc list-inside space-y-3 ml-2 mb-6">
+                <li>The first place we went to was decent, food was okay but it was lowk pricy for the amount of food they gave, we bought some sandwiches from there and other stuff. <strong>7/10.</strong></li>
+                <li>Then we went to a pizza place, it was good food but pricy and uh when they gave us the note so that we can pay, they were not there to give our cash back bc we paid a bit more since we didnt have smaller change/ so we basically left them a free tip/ funny thing is that since that time we always call that place "tip" and not the actual name. <strong>8/10.</strong></li>
+                <li>Then we found the legendary place, THEY SOLD KEBABS, THEY WERE SO GOOD, AND SO CHEAP BRO, absolute good place, we both loved it and we went there for multiple times. <strong>9.5/10.</strong></li>
+                <li>We went to some other place that made pizza and stuff and lots happened there, first, they almost made us pay extra bc buddy didnt choose the right machine, and the WORST thing is that on their menu, there were 4 images and 3 big prices, we thought we would pay the big price, but turns out there was a smaller price and it costed more so we paid more. I lowk regreted it bc lost money and the food was okay but ehhh :( <strong>8/10.</strong></li>
+                <li>And the last one worth mentioning was a small bussines(probably) made by a woman and her stuff is so fricking good bro and the price is actually decent, we went there almost everyday after colege. <strong>9.7/10.</strong></li>
+            </ul>
+            <p class="mb-6">Anyway that was the food thing (we lost so much money).</p>
+
+            <p class="mb-6">Okay other than food, getting into public transport was lowk so hard sometimes, and when we did, it was full we could barely breathe// We used to wait at the station and there are only a few routes that go to our village, and sometimes some that did go ragebaited us and said "no we not going there" prob bc they had other customers/</p>
+            <p class="mb-6">Anyway one day we did a pretty weird path to that station and when we got there, a route came and it was actually so empty we were shocked, so we did that path again, and IT HAPPENED AGAIN. So i basically told my friend that this is a "theorem"/ The theorem consists of:  Walking on that exact pathway, going to the 9.7/10 place and getting something to eat and not going another pathway And the crazy thing is that it actually worked everytime, and when we didnt follow the rules, it didnt work so we lowk goated for that.</p>
+            <p class="mb-6">Another thing that we did is just inspect everything around us - people, cars, buildings, we were always active on our surroundings first of all for our safety and second of all that was a great conversation starter/  and bro sometimes the city is so weird , i was having a bad day , both of us actually and we were walking around and then a random homeless person starts doing fart sounds with his mouth/ ?????? alr bro</p>
+            <p class="mb-6">also i used to intentionally make me and him wait for the public transport bc i wanted the best one we could possibly get, one with free space to breathe, i was not tryna get in something with 0 atom space / he used to get ragebaited and i just kept doing it (we were never late anyway)</p>
+  
+            <p class="mb-0">Okay so basically at our IT lesson we learn coding and in that course we learned a "for loop" which is a code that loops a action, it does the same action multiple times. And when we were at a station theres was a person that looked disabled and he was going to cars to ask for money (nothing wrong about this i feel bad for him) but we noticed he was doing the same exact path and animation so we called him FOR LOOP (not ina dissrispectful way i thank God i am not disabled, sent prayers to that dude, all love).</p>
+        `
+    },
+    {
+        id: 6,
+        title: "End of Semester & Exams",
+        date: "Finals season",
+        readTime: "December",
+        content: `
+            <p class="mb-6">Alright Letter about the end of school semester.</p>
+            <p class="mb-6">Obviously at the end there are alot of tests and thesis and exams, i was already fked up because of my sleep schedule and that made me less active than start of semester. The tests were coming, i was trying to study but i couldnt really do much. Either way, i aactually performed so well.</p>
+            <p class="mb-4 text-sm font-semibold uppercase tracking-[0.2em] opacity-70">Journal entry</p>
+            <blockquote class="border-l-4 border-current pl-4 italic opacity-90 mb-6">
+                im very proud of mysef, not in a sense of pride, but relief and pure happiness, because.. lets start from the start - 9th grade  , i had decent grades there, close to the ones here, but at the exams i had way bigger expectations , and i didnt get the grades i wanted, so that broke me, that was the reason i became depressed , but now, at college, PROFIL REAL, being a procrastinator and barely doing my homework and not studying full hours, i have some of the best results. I did try, but not so much, i was exhausted since the 9th grade exams, but i still ended up crazier(results) than before, and im very proud also because of the programming  exam, tbh I used to fall asleep in programming lessons because I slept very little, since I started college I only sleep 5-6 hours and I couldn't help myself, so during programming exam I didn't know some of the topics, and one more thing, two versions of the exam were posted on a group, version 1 and 2, but during the exam I got the exam with version 3,  without any previous preparation from the group, and even in some exercoses there were things that I didn't really know, because I was sleeping in lessons, but being calm, thinking logically, I understood on my own at the moment how it was correct. I didn't ask anyone for help, I didn't prepare for this version, I was sleeping in lessons ./  i finished the exam and got the best grade (10) , this honestly heals the trauma from 9th grade.
+            </blockquote>
+            <p class="mb-6">This dosent mean i have to keep being this miserable and id still get good results, if i keep on going it actually get worse, so dont do that kids, do not sacrifice your sleep for NOTHING.</p>
+            <p class="mb-0">Alr enough with the glaze but im just proud of myself for the first time in idk how many years. So yes, i was a moving time bomb, i was ina completely new environment, i was anxious af, but i still ended the semester on good grades and only.. some sleep debts.</p>
+        `
+    },
+    {
+        id: 7,
+        title: "Where I Am Now",
+        date: "How I feel",
+        readTime: "Personal",
+        content: `
+            <p class="mb-6">Alright now i want to talk a bit about myself, since we havent talked in a while and i want you to understand the current 'Me'.</p>
+            <p class="mb-6">Im very much the same as i was when we talked, i dont know how u fully saw me as a person, but im still extremely supportive, full of empathy(hopefully?) and loving.</p>
+            <p class="mb-6">Some things did change tho.</p>
+            <p class="mb-6">I started showing some signs of apathy, it was probably just depression, but there were moments when it got too far.</p>
+            <p class="mb-6">Not doing my homework and not caring too much about that was already a sign of apathy, but there were many moments when i was around other people, and i just felt so uneasy, it was like i hated humans and i just wanted to stop being there.</p>
+            <p class="mb-6">Even on new years day, the whole day it just felt weird, i barely had any expression on my face and i just felt off, oh okay i remember now what i fully want to say:</p>
+            <p class="mb-6">This thing that im feeling is basically just "Whats the point/ this is all meaningless", i basically just lose hope in that situation that i am and i just say to myself that i dont want to be there/to be doing this or i just want to do nothing.</p>
+            <p class="mb-6">Ive noticed my depression since summer and since then ive been figthing with it, i honestly never got close on overcoming it and it just seems like i cant do it, i never try enough/ but its not that deep, the fact that im aware and trying to overcome it means its not over for me and this apathy is just a temporary thing.</p>
+            <p class="mb-6">It wouldve probably been better if i prayed more or actually tried to speak with Jesus, but i strayed so far away from him, i never lost faith in him  but i basically ignored him and just kept being blind about that subject.</p>
+            <p class="mb-6">Either way, im trying , i always will keep on trying and i know i can do it/ i always did.</p>
+            <p class="mb-0">As i said about the mistakes thing, i make so many mistakes now and im in a DEEP spiritual warfare, but i know that this is just INSANE character development and my prayer for wisdom, love and obedience is being answered by all of these problems, for they all build me into a stronger, more loving, more wise and more dedicated person.</p>
+        `
+    },
+    {
+        id: 8,
+        title: "Closing & Questions",
+        date: "Final note",
+        readTime: "Last letter",
+        content: `
+            <p class="mb-6">This might be my last letter, i dont want to overwhelm you and i honestly feel a bit weird doing this because i never have dont something like this and i dont know if you dislike me now or if you have lost the opinion you had about me before/ it would just feels awkward , i dont know. either way i wrote this so i can fix that.</p>
+            <p class="mb-6">Im very curious about how your first semester was, and not just school, but your personal development aswell, i want to know how you changed, your mindset, your friendships and anything that impacted your life/</p>
+            <p class="mb-6">I regret not starting to text again and just sending a random message because ive lost so many updates and its so sad, once again, you are goated, i loved our conversations and you were like another version of me, but more happy. Ive lost possible good conversations, experiences and many other things by isolating myself, and i am sorry.</p>
+            <p class="mb-6">Ah i dont know, theres many more things that i could, but ill leave that for you to decide.</p>
+            <div class="mb-6 p-4 rounded-xl border border-white/10 bg-black/5 dark:bg-white/5">
+                <p class="mb-2">Remember, if you have had a question on any of the things that i wrote, i added the option of selecting some text and saving, then u can write your own notes to them.</p>
+                <p class="mb-0">Fun fact: this whole "book" has exaclty 4067 words, funny :D. nevermind i updated it so now its more.</p>
+            </div>
+        `
+    }
+];
+
+        // --- Application Logic ---
+        const app = {
+            // State
+            state: {
+                activeTab: 'letters',
+                activeLetterId: 1,
+                savedPhrases: [],
+                showMobileMenu: false,
+                currentSelection: null,
+                theme: 'sepia', // light, dark, sepia
+                fontSize: 20,
+                fontFamily: 'serif' // serif, sans, mono
+            },
+
+            // Initialization
+            init() {
+                this.loadFromStorage();
+                this.applyGlobalTheme();
+                this.renderAll();
+                this.setupGlobalListeners();
+            },
+
+            // Persistence
+            loadFromStorage() {
+                const savedPhrases = localStorage.getItem('letters_savedPhrases');
+                const theme = localStorage.getItem('letters_theme');
+                const prefs = localStorage.getItem('letters_prefs');
+                
+                if (savedPhrases) this.state.savedPhrases = JSON.parse(savedPhrases);
+                if (theme) this.state.theme = theme;
+                if (prefs) {
+                    const { fontSize, fontFamily } = JSON.parse(prefs);
+                    this.state.fontSize = fontSize || 20;
+                    this.state.fontFamily = fontFamily || 'serif';
+                }
+            },
+
+            saveToStorage() {
+                localStorage.setItem('letters_savedPhrases', JSON.stringify(this.state.savedPhrases));
+                localStorage.setItem('letters_theme', this.state.theme);
+                localStorage.setItem('letters_prefs', JSON.stringify({
+                    fontSize: this.state.fontSize,
+                    fontFamily: this.state.fontFamily
+                }));
+            },
+
+            // State Setters
+            setState(updates, shouldRender = true) {
+                this.state = { ...this.state, ...updates };
+                this.saveToStorage(); // Auto-save on state change
+                if (shouldRender) this.renderAll();
+            },
+
+            setActiveTab(tab) {
+                this.setState({ activeTab: tab, showMobileMenu: false });
+                // Scroll to top when switching tabs
+                document.querySelector('main').scrollTop = 0;
+            },
+
+            setActiveLetter(id) {
+                this.setState({ activeLetterId: id });
+            },
+
+            nextLetter() {
+                const currentIndex = LETTERS.findIndex(l => l.id === this.state.activeLetterId);
+                if (currentIndex < LETTERS.length - 1) {
+                    this.setActiveLetter(LETTERS[currentIndex + 1].id);
+                    document.querySelector('main').scrollTop = 0;
+                }
+            },
+
+            prevLetter() {
+                const currentIndex = LETTERS.findIndex(l => l.id === this.state.activeLetterId);
+                if (currentIndex > 0) {
+                    this.setActiveLetter(LETTERS[currentIndex - 1].id);
+                    document.querySelector('main').scrollTop = 0;
+                }
+            },
+
+            setTheme(theme) {
+                this.setState({ theme });
+            },
+
+            setFontSize(size) {
+                this.setState({ fontSize: parseInt(size) });
+            },
+
+            setFontFamily(family) {
+                this.setState({ fontFamily: family });
+            },
+
+            toggleMobileMenu(show) {
+                const overlay = document.getElementById('mobile-overlay');
+                const sidebar = document.getElementById('sidebar-panel');
+                
+                if (show) {
+                    this.state.showMobileMenu = true;
+                    overlay.classList.remove('hidden');
+                    // Small delay to allow display:block to apply before opacity transition
+                    setTimeout(() => {
+                        overlay.classList.remove('opacity-0');
+                        sidebar.classList.remove('-translate-x-full');
+                    }, 10);
+                } else {
+                    this.state.showMobileMenu = false;
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('opacity-0');
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                    }, 300);
+                }
+            },
+
+            scrollTabs(direction) {
+                const scroller = document.getElementById('tabs-scroller');
+                if (!scroller) return;
+                const amount = Math.max(180, scroller.clientWidth * 0.6);
+                scroller.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
+                // Give the shadow a moment to update after the smooth scroll
+                setTimeout(() => this.updateTabShadows(), 220);
+            },
+
+            attachTabScrollListener() {
+                const scroller = document.getElementById('tabs-scroller');
+                if (this.lastTabScroller && this.tabScrollHandler) {
+                    this.lastTabScroller.removeEventListener('scroll', this.tabScrollHandler);
+                }
+                if (!scroller) return;
+                this.tabScrollHandler = () => this.updateTabShadows();
+                this.lastTabScroller = scroller;
+                scroller.addEventListener('scroll', this.tabScrollHandler);
+                // Initial state
+                this.updateTabShadows();
+            },
+
+            updateTabShadows() {
+                const scroller = document.getElementById('tabs-scroller');
+                const left = document.getElementById('tabs-shadow-left');
+                const right = document.getElementById('tabs-shadow-right');
+                if (!scroller || !left || !right) return;
+
+                const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+                const atStart = scroller.scrollLeft <= 4;
+                const atEnd = scroller.scrollLeft >= maxScroll - 4;
+
+                left.style.opacity = atStart ? '0' : '1';
+                right.style.opacity = atEnd ? '0' : '1';
+            },
+
+            // Logic Actions
+            deletePhrase(id) {
+                const newPhrases = this.state.savedPhrases.filter(p => p.id !== id);
+                this.setState({ savedPhrases: newPhrases });
+            },
+
+            updatePhraseNote(id, newNote) {
+                const newPhrases = this.state.savedPhrases.map(p => 
+                    p.id === id ? { ...p, note: newNote } : p
+                );
+                this.state.savedPhrases = newPhrases;
+                this.saveToStorage();
+                // No re-render to maintain focus
+            },
+
+            // Text Selection Logic
+            setupGlobalListeners() {
+                document.addEventListener('selectionchange', () => {
+                    // Debounce selection handling
+                    if (this.selectionTimeout) clearTimeout(this.selectionTimeout);
+                    this.selectionTimeout = setTimeout(() => this.handleSelection(), 200);
+                });
+                
+                // Close mobile menu on resize if screen gets big
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth >= 768 && this.state.showMobileMenu) {
+                        this.toggleMobileMenu(false);
+                    }
+                    this.updateTabShadows();
+                });
+            },
+
+            handleSelection() {
+                const selection = window.getSelection();
+                const text = selection.toString().trim();
+                const tooltipEl = document.getElementById('selection-tooltip');
+
+                // Only show if text is selected, we are in letters tab, and selection is valid
+                if (text.length > 0 && this.state.activeTab === 'letters') {
+                    // Ensure selection is within the letter content
+                    const container = document.getElementById('letter-content-area');
+                    if (!container || !selection.anchorNode || !container.contains(selection.anchorNode)) {
+                        this.hideTooltip();
+                        return;
+                    }
+
+                    const range = selection.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                    
+                    // Logic to position tooltip above selection
+                    const topPos = rect.top - 60; 
+                    const leftPos = rect.left + (rect.width / 2);
+
+                    this.state.currentSelection = { text, top: topPos, left: leftPos };
+
+                    // Update Tooltip DOM
+                    tooltipEl.style.top = `${topPos}px`;
+                    tooltipEl.style.left = `${leftPos}px`;
+                    
+                    tooltipEl.classList.remove('hidden');
+                    tooltipEl.classList.add('animate-tooltip');
+                    
+                    this.updateTooltipTheme();
+                } else {
+                    this.hideTooltip();
+                }
+            },
+
+            hideTooltip() {
+                const tooltipEl = document.getElementById('selection-tooltip');
+                tooltipEl.classList.add('hidden');
+                tooltipEl.classList.remove('animate-tooltip');
+                this.state.currentSelection = null;
+            },
+
+            saveSelectedPhrase() {
+                if (this.state.currentSelection) {
+                    const activeLetter = LETTERS.find(l => l.id === this.state.activeLetterId);
+                    const newPhrase = {
+                        id: Date.now(),
+                        text: this.state.currentSelection.text,
+                        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                        source: activeLetter ? activeLetter.title : "Unknown",
+                        note: ""
+                    };
+
+                    this.state.savedPhrases = [newPhrase, ...this.state.savedPhrases];
+                    this.saveToStorage();
+                    this.hideTooltip();
+                    window.getSelection().removeAllRanges();
+                    this.showToastNotification();
+                }
+            },
+
+            showToastNotification() {
+                const toast = document.getElementById('toast');
+                const content = document.getElementById('toast-content');
+                
+                // Style based on theme
+                const colors = this.getThemeColors();
+                content.className = `px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-medium border backdrop-blur-md ${colors.toast}`;
+
+                toast.classList.remove('-translate-y-20', 'opacity-0', 'pointer-events-none');
+                toast.classList.add('translate-y-0', 'opacity-100');
+                
+                setTimeout(() => {
+                    toast.classList.add('-translate-y-20', 'opacity-0', 'pointer-events-none');
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                }, 2500);
+            },
+
+            // --- Theme & Style Helpers ---
+
+            getThemeColors() {
+                const t = this.state.theme;
+                if (t === 'dark') {
+                    return {
+                        bg: 'bg-[#0f172a]',
+                        text: 'text-slate-300',
+                        heading: 'text-slate-100',
+                        accent: 'text-indigo-400',
+                        accentBg: 'bg-indigo-500/20',
+                        border: 'border-slate-800',
+                        card: 'bg-[#1e293b]',
+                        sidebar: 'bg-[#0f172a] border-r border-slate-800',
+                        navActive: 'bg-[#1e293b] text-indigo-400',
+                        navInactive: 'text-slate-500 hover:text-slate-300 hover:bg-[#1e293b]/50',
+                        toast: 'bg-[#1e293b]/90 text-white border-slate-700'
+                    };
+                } else if (t === 'sepia') {
+                    return {
+                        bg: 'bg-[#f8f5e6]',
+                        text: 'text-[#5c4033]',
+                        heading: 'text-[#433422]',
+                        accent: 'text-[#a67c52]',
+                        accentBg: 'bg-[#8b5e3c]/10',
+                        border: 'border-[#e6dbcf]',
+                        card: 'bg-[#fdfbf7]',
+                        sidebar: 'bg-[#f0eadd] border-r border-[#e3d5c2]',
+                        navActive: 'bg-[#fdfbf7] text-[#5c4033] shadow-sm border border-[#e6dbcf]',
+                        navInactive: 'text-[#9c8975] hover:text-[#5c4033] hover:bg-[#e6dbcf]/50',
+                        toast: 'bg-[#433422]/90 text-[#f4ecd8] border-[#5c4033]'
+                    };
+                } else {
+                    return {
+                        bg: 'bg-white',
+                        text: 'text-slate-600',
+                        heading: 'text-slate-900',
+                        accent: 'text-indigo-600',
+                        accentBg: 'bg-indigo-50',
+                        border: 'border-slate-200',
+                        card: 'bg-white',
+                        sidebar: 'bg-[#fafafa] border-r border-slate-200',
+                        navActive: 'bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200',
+                        navInactive: 'text-slate-500 hover:text-slate-800 hover:bg-slate-100',
+                        toast: 'bg-white/90 text-slate-800 border-slate-200'
+                    };
+                }
+            },
+
+            applyGlobalTheme() {
+                const body = document.getElementById('body');
+                const header = document.getElementById('mobile-header');
+                const colors = this.getThemeColors();
+                const fontClass = this.state.fontFamily === 'sans' ? 'font-sans' : this.state.fontFamily === 'mono' ? 'font-mono' : 'font-serif';
+
+                // Body Classes
+                body.className = `min-h-screen transition-colors duration-500 ease-in-out ${colors.bg} ${colors.text} ${fontClass}`;
+                
+                // Add theme-specific class for selection css targeting
+                body.classList.remove('theme-light', 'theme-dark', 'theme-sepia');
+                body.classList.add(`theme-${this.state.theme}`);
+
+                // Header Classes
+                header.className = `md:hidden p-4 flex justify-between items-center sticky top-0 z-20 backdrop-blur-xl border-b transition-colors duration-300 ${colors.bg.replace('bg-', 'bg-opacity-80 ')} ${colors.border} ${colors.heading}`;
+            },
+
+            updateTooltipTheme() {
+                const btn = document.getElementById('tooltip-btn');
+                const arrow = document.getElementById('tooltip-arrow');
+                const t = this.state.theme;
+                
+                if (t === 'sepia') {
+                    btn.className = "px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-transform hover:scale-105 bg-[#433422] text-[#f4ecd8] shadow-xl";
+                    arrow.className = "w-3 h-3 transform rotate-45 mx-auto -mt-1.5 text-[#433422] bg-current";
+                } else if (t === 'dark') {
+                    btn.className = "px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-transform hover:scale-105 bg-indigo-500 text-white shadow-xl shadow-indigo-500/30";
+                    arrow.className = "w-3 h-3 transform rotate-45 mx-auto -mt-1.5 text-indigo-500 bg-current";
+                } else {
+                    btn.className = "px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-transform hover:scale-105 bg-slate-900 text-white shadow-xl";
+                    arrow.className = "w-3 h-3 transform rotate-45 mx-auto -mt-1.5 text-slate-900 bg-current";
+                }
+            },
+
+            // --- Rendering ---
+
+            renderAll() {
+                this.applyGlobalTheme();
+                this.renderSidebar();
+                this.renderContent();
+                lucide.createIcons();
+            },
+
+            renderSidebar() {
+                const colors = this.getThemeColors();
+                
+                // Helper for nav buttons
+                const navBtn = (id, icon, label, count) => {
+                    const active = this.state.activeTab === id;
+                    const classes = active ? colors.navActive : colors.navInactive;
+                    
+                    return `
+                        <button onclick="app.setActiveTab('${id}')" 
+                            class="group flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-all duration-200 font-medium ${classes}">
+                            <i data-lucide="${icon}" width="20" height="20" class="${active ? '' : 'opacity-70 group-hover:opacity-100'}"></i>
+                            <span class="flex-1 text-left">${label}</span>
+                            ${count !== undefined && count > 0 ? `
+                                <span class="text-xs font-bold px-2 py-0.5 rounded-full ${active ? 'bg-black/5 dark:bg-white/10' : 'bg-black/5 dark:bg-white/5'}">
+                                    ${count}
+                                </span>
+                            ` : ''}
+                        </button>
+                    `;
+                };
+
+                const html = `
+                    <div id="sidebar-panel" class="fixed inset-y-0 left-0 w-72 transform transition-transform duration-500 cubic-bezier(0.2, 0.8, 0.2, 1) ${this.state.showMobileMenu ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} ${colors.sidebar} z-50 flex flex-col">
+                        
+                        <!-- Logo Area -->
+                        <div class="p-8">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="p-2.5 rounded-xl ${colors.accentBg} ${colors.accent}">
+                                    <i data-lucide="feather" width="20" height="20" class="stroke-[2.5]"></i>
+                                </div>
+                                <span class="text-2xl font-bold font-display tracking-tight ${colors.heading}">Letters</span>
+                            </div>
+                            <p class="text-xs opacity-50 pl-14">Hi toni</p>
+                        </div>
+
+                        <!-- Navigation -->
+                        <div class="px-4 flex-1 space-y-1">
+                            ${navBtn('letters', 'book-open', 'Read Letters')}
+                            ${navBtn('saved', 'bookmark', 'Collection', this.state.savedPhrases.length)}
+                            ${navBtn('settings', 'sliders-horizontal', 'Settings')}
+                        </div>
+
+                    </div>
+                `;
+
+                document.getElementById('sidebar-container').innerHTML = html;
+            },
+
+            renderContent() {
+                const contentDiv = document.getElementById('main-content');
+                if (this.state.activeTab === 'letters') contentDiv.innerHTML = this.getLettersView();
+                else if (this.state.activeTab === 'saved') contentDiv.innerHTML = this.getSavedPhrasesView();
+                else if (this.state.activeTab === 'settings') contentDiv.innerHTML = this.getSettingsView();
+            },
+
+            getLettersView() {
+                const colors = this.getThemeColors();
+                const activeLetter = LETTERS.find(l => l.id === this.state.activeLetterId);
+                const currentIndex = LETTERS.findIndex(l => l.id === this.state.activeLetterId);
+                const hasPrev = currentIndex > 0;
+                const hasNext = currentIndex < LETTERS.length - 1;
+
+                return `
+                    <div class="animate-fadeIn max-w-3xl mx-auto">
+                        <!-- Letter Content -->
+                        <article class="relative">
+                            <header class="mb-10 text-center">
+                                <h1 class="text-4xl md:text-5xl font-display font-bold mb-4 tracking-tight leading-tight ${colors.heading}">${activeLetter.title}</h1>
+                                <div class="flex items-center justify-center gap-2 text-sm opacity-60 font-medium tracking-wide uppercase">
+                                    <span>${activeLetter.date}</span>
+                                    <span>|</span>
+                                    <span>${activeLetter.readTime}</span>
+                                </div>
+                            </header>
+
+                            <!-- Divider -->
+                            <div class="flex items-center justify-center gap-4 mb-12 opacity-30">
+                                <span class="h-px w-12 bg-current"></span>
+                                <i data-lucide="flower-2" width="16" height="16"></i>
+                                <span class="h-px w-12 bg-current"></span>
+                            </div>
+
+                            <!-- Text Area -->
+                            <div id="letter-content-area" class="prose prose-lg mx-auto ${this.state.theme === 'dark' ? 'prose-invert' : ''} transition-all duration-300" 
+                                style="font-size: ${this.state.fontSize}px; line-height: 1.8;">
+                                ${activeLetter.content}
+                            </div>
+                            
+                            <!-- Footer Signature -->
+                             <div class="mt-16 pt-8 border-t border-opacity-30 ${colors.border} text-center opacity-50 text-sm">
+                                <p>67 | Vol. ${activeLetter.id}</p>
+                            </div>
+
+                            <!-- Prev / Next -->
+                            <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button ${hasPrev ? '' : 'disabled'} onclick="app.prevLetter()" class="group flex items-center justify-center gap-3 px-4 py-3 rounded-xl border ${colors.border} ${colors.card} ${hasPrev ? 'hover:scale-[1.01] active:scale-[0.99]' : 'opacity-50 cursor-not-allowed'} transition-all">
+                                    <i data-lucide="arrow-left" width="18" height="18" class="${hasPrev ? '' : 'opacity-60'}"></i>
+                                    <span class="text-sm font-medium">Previous</span>
+                                </button>
+                                <button ${hasNext ? '' : 'disabled'} onclick="app.nextLetter()" class="group flex items-center justify-center gap-3 px-4 py-3 rounded-xl border ${colors.border} ${colors.card} ${hasNext ? 'hover:scale-[1.01] active:scale-[0.99]' : 'opacity-50 cursor-not-allowed'} transition-all">
+                                    <span class="text-sm font-medium">Next</span>
+                                    <i data-lucide="arrow-right" width="18" height="18" class="${hasNext ? '' : 'opacity-60'}"></i>
+                                </button>
+                            </div>
+                        </article>
+                    </div>
+                `;
+            },
+
+            getSavedPhrasesView() {
+                const colors = this.getThemeColors();
+                if (this.state.savedPhrases.length === 0) {
+                    return `
+                        <div class="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 animate-fadeIn">
+                            <div class="w-16 h-16 mb-6 rounded-2xl flex items-center justify-center ${colors.accentBg} ${colors.accent}">
+                                <i data-lucide="bookmark" width="32" height="32" class="opacity-50"></i>
+                            </div>
+                            <h3 class="text-xl font-display font-bold mb-2 ${colors.heading}">Your collection is empty</h3>
+                            <p class="max-w-md opacity-60">Highlight meaningful text in any letter to save it here forever.</p>
+                            <button onclick="app.setActiveTab('letters')" class="mt-8 px-6 py-2.5 rounded-full bg-black text-white dark:bg-white dark:text-black font-medium text-sm hover:opacity-80 transition-opacity">Start Reading</button>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="animate-fadeIn max-w-2xl mx-auto space-y-8">
+                        <header class="mb-10 text-center">
+                            <h2 class="text-3xl font-display font-bold mb-2 ${colors.heading}">My Collection</h2>
+                            <p class="text-sm opacity-60">${this.state.savedPhrases.length} saved moments</p>
+                        </header>
+
+                        <div class="space-y-6">
+                            ${this.state.savedPhrases.map(phrase => `
+                                <div class="group relative p-6 rounded-2xl border transition-all duration-300 hover:shadow-lg ${colors.card} ${colors.border}">
+                                    <!-- Delete Button -->
+                                    <button onclick="app.deletePhrase(${phrase.id})" class="absolute top-4 right-4 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 hover:text-red-500">
+                                        <i data-lucide="trash-2" width="16" height="16"></i>
+                                    </button>
+
+                                    <!-- Quote -->
+                                    <div class="mb-6 relative pl-4">
+                                        <div class="absolute left-0 top-0 bottom-0 w-1 rounded-full ${colors.accentBg.replace('/20', '')} opacity-40"></div>
+                                        <p class="text-lg font-serif italic leading-relaxed opacity-90">"${phrase.text}"</p>
+                                        <div class="mt-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-50">
+                                            <span>${phrase.source}</span>
+                                            <span>|</span>
+                                            <span>${phrase.date}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Note Input -->
+                                    <div class="relative pt-4 border-t border-opacity-50 ${colors.border}">
+                                       <label class="block text-xs font-bold uppercase tracking-wider opacity-40 mb-2">My Note</label>
+                                       <textarea 
+                                            oninput="app.updatePhraseNote(${phrase.id}, this.value)"
+                                            class="w-full bg-transparent p-3 rounded-xl text-sm leading-relaxed border transition-all focus:outline-none focus:ring-1 
+                                            ${colors.border} focus:${colors.border.replace('border-', 'ring-')}
+                                            min-h-[100px] max-h-[300px] overflow-y-auto resize-y"
+                                            placeholder="Write a reflection..."
+                                        >${phrase.note || ''}</textarea>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            },
+
+            getSettingsView() {
+                const colors = this.getThemeColors();
+                
+                // Helper for theme option
+                const themeOption = (name, val, colorClass) => `
+                    <button onclick="app.setTheme('${val}')" 
+                        class="relative flex-1 p-4 rounded-xl border-2 transition-all ${this.state.theme === val ? `border-current ${colors.accent}` : 'border-transparent bg-black/5 dark:bg-white/5 opacity-70 hover:opacity-100'}">
+                        <div class="w-full h-8 rounded-lg mb-2 ${colorClass} shadow-sm"></div>
+                        <span class="text-xs font-bold uppercase tracking-wider">${name}</span>
+                        ${this.state.theme === val ? `<div class="absolute top-2 right-2"><i data-lucide="check-circle-2" width="16" height="16"></i></div>` : ''}
+                    </button>
+                `;
+
+                return `
+                    <div class="animate-fadeIn max-w-xl mx-auto space-y-12">
+                         <header class="mb-10">
+                            <h2 class="text-3xl font-display font-bold mb-2 ${colors.heading}">Reading Preferences</h2>
+                            <p class="text-sm opacity-60">Customize your reading environment</p>
+                        </header>
+
+                        <!-- Theme Section -->
+                        <section>
+                            <h3 class="text-sm font-bold uppercase tracking-widest opacity-50 mb-4">Theme</h3>
+                            <div class="flex gap-4">
+                                ${themeOption('Light', 'light', 'bg-white border border-slate-200')}
+                                ${themeOption('Sepia', 'sepia', 'bg-[#f8f5e6] border border-[#e6dbcf]')}
+                                ${themeOption('Dark', 'dark', 'bg-[#0f172a] border border-slate-700')}
+                            </div>
+                        </section>
+
+                        <!-- Typography Section -->
+                         <section>
+                            <h3 class="text-sm font-bold uppercase tracking-widest opacity-50 mb-4">Typography</h3>
+                            <div class="p-6 rounded-2xl border ${colors.card} ${colors.border}">
+                                
+                                <!-- Font Family -->
+                                <div class="mb-8">
+                                    <label class="block text-xs font-bold mb-3">Font Family</label>
+                                    <div class="grid grid-cols-3 gap-3">
+                                        <button onclick="app.setFontFamily('serif')" class="px-3 py-2 rounded-lg border text-lg font-serif ${this.state.fontFamily === 'serif' ? `${colors.bg} ring-2 ring-current border-transparent` : 'border-transparent bg-black/5 dark:bg-white/5'}">Aa</button>
+                                        <button onclick="app.setFontFamily('sans')" class="px-3 py-2 rounded-lg border text-lg font-sans ${this.state.fontFamily === 'sans' ? `${colors.bg} ring-2 ring-current border-transparent` : 'border-transparent bg-black/5 dark:bg-white/5'}">Aa</button>
+                                        <button onclick="app.setFontFamily('mono')" class="px-3 py-2 rounded-lg border text-base font-mono ${this.state.fontFamily === 'mono' ? `${colors.bg} ring-2 ring-current border-transparent` : 'border-transparent bg-black/5 dark:bg-white/5'}">Aa</button>
+                                    </div>
+                                </div>
+
+                                <!-- Font Size -->
+                                <div>
+                                    <div class="flex justify-between mb-3">
+                                        <label class="text-xs font-bold">Font Size</label>
+                                        <span class="text-xs opacity-60 font-mono">${this.state.fontSize}px</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="text-xs">A</span>
+                                        <input type="range" min="16" max="32" step="2" value="${this.state.fontSize}" 
+                                            oninput="app.setFontSize(this.value)"
+                                            class="flex-1 h-2 rounded-lg appearance-none cursor-pointer bg-black/10 dark:bg-white/10 ${this.state.theme === 'dark' ? 'accent-indigo-500' : 'accent-slate-900'}">
+                                        <span class="text-xl">A</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                `;
+            }
+        };
+
+        // Start App
+        app.init();
+
+    </script>
+</body>
+</html>
